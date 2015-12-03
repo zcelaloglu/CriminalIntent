@@ -24,6 +24,7 @@ public class CrimeFragment extends Fragment {
         mCrime = new Crime();
     }
 
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
