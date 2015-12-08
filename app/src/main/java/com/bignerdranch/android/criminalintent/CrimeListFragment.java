@@ -1,16 +1,17 @@
 package com.bignerdranch.android.criminalintent;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.List;
 
@@ -21,6 +22,8 @@ public class CrimeListFragment extends Fragment {
 
     private RecyclerView mCrimeRecyclerView;
     private CrimeAdapter mCrimeAdapter;
+
+    private int mLastAdapterClickPosition = -1;
 
     @Nullable
     @Override
@@ -39,8 +42,24 @@ public class CrimeListFragment extends Fragment {
     private void updateUI() {
         CrimeLab crimeLab = CrimeLab.get(getActivity());
         List<Crime> crimes = crimeLab.getCrimes();
-        mCrimeAdapter = new CrimeAdapter(crimes);
-        mCrimeRecyclerView.setAdapter(mCrimeAdapter);
+        if(mCrimeAdapter == null) {
+            mCrimeAdapter = new CrimeAdapter(crimes);
+            mCrimeRecyclerView.setAdapter(mCrimeAdapter);
+        }else {
+            if(mLastAdapterClickPosition < 0) {
+                mCrimeAdapter.notifyDataSetChanged();
+            } else {
+                mCrimeAdapter.notifyItemChanged(mLastAdapterClickPosition);
+                mLastAdapterClickPosition = -1;
+            }
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d("OnResume","OnResume called!");
+        updateUI();
     }
 
     private class CrimeAdapter extends RecyclerView.Adapter<CrimeHolder> {
@@ -55,6 +74,7 @@ public class CrimeListFragment extends Fragment {
             LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
             View view = layoutInflater.inflate(R.layout.list_item_crime, parent, false);
             return new CrimeHolder(view);
+
         }
 
         @Override
@@ -93,7 +113,9 @@ public class CrimeListFragment extends Fragment {
 
         @Override
         public void onClick(View v) {
-            Toast.makeText(getActivity(), mCrime.getTitle() + " clicked!", Toast.LENGTH_SHORT).show();
+            mLastAdapterClickPosition = getAdapterPosition();
+            Intent intent = CrimeActivity.newIntent(getContext(),mCrime.getId());
+            startActivity(intent);
         }
     }
 }
