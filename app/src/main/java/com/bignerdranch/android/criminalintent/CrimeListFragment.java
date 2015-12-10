@@ -20,6 +20,7 @@ import java.util.List;
  */
 public class CrimeListFragment extends Fragment {
 
+    private static final String ADAPTER_POSITION = "adapter_position";
     private RecyclerView mCrimeRecyclerView;
     private CrimeAdapter mCrimeAdapter;
 
@@ -34,9 +35,17 @@ public class CrimeListFragment extends Fragment {
         mCrimeRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
         updateUI();
-        mCrimeRecyclerView.getAdapter().notifyItemChanged(0,5);
+        if (savedInstanceState != null) {
+            savedInstanceState.getInt(ADAPTER_POSITION,0);
+        }
         return view;
 
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(ADAPTER_POSITION,mLastAdapterClickPosition);
     }
 
     private void updateUI() {
@@ -114,7 +123,7 @@ public class CrimeListFragment extends Fragment {
         @Override
         public void onClick(View v) {
             mLastAdapterClickPosition = getAdapterPosition();
-            Intent intent = CrimeActivity.newIntent(getContext(),mCrime.getId());
+            Intent intent = CrimePagerActivity.newIntent(getContext(),mCrime.getId());
             startActivity(intent);
         }
     }
