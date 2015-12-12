@@ -19,7 +19,7 @@ import java.util.UUID;
 public class CrimePagerActivity extends FragmentActivity {
 
     private static final String EXTRA_CRIME_ID= "com.bignerdranch.android.criminalintent.crime_id";
-    
+
     private ViewPager mViewPager;
     private List<Crime> mCrimes;
 
