@@ -35,7 +35,8 @@ public class CrimeListFragment extends Fragment {
     private Button mAddButton;
     private boolean mSubtitleVisible;
 
-    private int mLastAdapterClickPosition = -1;
+
+    private int mAdapterClickPosition = -1;
 
     @Nullable
     @Override
@@ -50,7 +51,7 @@ public class CrimeListFragment extends Fragment {
 
         updateUI();
         if (savedInstanceState != null) {
-            mLastAdapterClickPosition = savedInstanceState.getInt(ADAPTER_POSITION,0);
+            mAdapterClickPosition = savedInstanceState.getInt(ADAPTER_POSITION,0);
             mSubtitleVisible = savedInstanceState.getBoolean(SUBTITLE_VISIBILITY);
         }
         return view;
@@ -68,7 +69,7 @@ public class CrimeListFragment extends Fragment {
     public void onSaveInstanceState(Bundle outState) {
         Log.d("onSaveInstanceState","onSaveInstance cagirildi");
         super.onSaveInstanceState(outState);
-        outState.putInt(ADAPTER_POSITION,mLastAdapterClickPosition);
+        outState.putInt(ADAPTER_POSITION, mAdapterClickPosition);
         outState.putBoolean(SUBTITLE_VISIBILITY,mSubtitleVisible);
     }
 
@@ -79,11 +80,13 @@ public class CrimeListFragment extends Fragment {
             mCrimeAdapter = new CrimeAdapter(crimes);
             mCrimeRecyclerView.setAdapter(mCrimeAdapter);
         }else {
-            if(mLastAdapterClickPosition < 0) {
+            mCrimeAdapter.setCrimes(crimes);
+            mCrimeAdapter.notifyDataSetChanged();
+            if(mAdapterClickPosition < 0) {
                 mCrimeAdapter.notifyDataSetChanged();
             } else {
-                mCrimeAdapter.notifyItemChanged(mLastAdapterClickPosition);
-                mLastAdapterClickPosition = -1;
+                mCrimeAdapter.notifyItemChanged(mAdapterClickPosition);
+                mAdapterClickPosition = -1;
             }
         }
         if(crimes.size() > 0) {
@@ -135,6 +138,10 @@ public class CrimeListFragment extends Fragment {
         public int getItemCount() {
             return mCrimes.size();
         }
+
+        public void setCrimes(List<Crime> crimes) {
+            mCrimes = crimes;
+        }
     }
 
     private class CrimeHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
@@ -161,7 +168,7 @@ public class CrimeListFragment extends Fragment {
 
         @Override
         public void onClick(View v) {
-            mLastAdapterClickPosition = getAdapterPosition();
+            mAdapterClickPosition = getAdapterPosition();
             Intent intent = CrimePagerActivity.newIntent(getContext(),mCrime.getId());
             startActivity(intent);
         }
