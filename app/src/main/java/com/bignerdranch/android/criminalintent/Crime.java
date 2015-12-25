@@ -12,6 +12,19 @@ public class Crime {
     private UUID mId;
     private Date mDate;
     private boolean mSolved;
+    private String mSuspect;
+
+    public void setId(UUID id) {
+        mId = id;
+    }
+
+    public String getSuspect() {
+        return mSuspect;
+    }
+
+    public void setSuspect(String suspect) {
+        mSuspect = suspect;
+    }
 
     public Crime() {
         this(UUID.randomUUID());
