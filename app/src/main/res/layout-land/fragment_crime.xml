@@ -62,6 +62,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/send_crime_report"/>
+
+        <Button
+            android:id="@+id/call_suspect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/call_suspect"/>
+
     </LinearLayout>
 
     </LinearLayout>

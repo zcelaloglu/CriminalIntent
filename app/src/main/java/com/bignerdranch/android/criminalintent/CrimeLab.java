@@ -91,7 +91,10 @@ public class CrimeLab {
         values.put(CrimeDbSchema.Cols.TITLE, crime.getTitle());
         values.put(CrimeDbSchema.Cols.DATE, crime.getDate().getTime());
         values.put(CrimeDbSchema.Cols.SOLVED, crime.isSolved() ? 1 : 0);
-        values.put(CrimeDbSchema.Cols.SUSPECT, crime.getSuspect());
+
+        if(crime.getSuspect() != null) {
+            values.put(CrimeDbSchema.Cols.SUSPECT, crime.getSuspect());
+        }
 
         return values;
     }

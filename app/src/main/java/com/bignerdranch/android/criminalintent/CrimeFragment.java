@@ -12,7 +12,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ShareCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -25,7 +24,9 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -35,7 +36,7 @@ public class CrimeFragment extends Fragment {
 
     private static final String ARG_CRIME_ID = "crime_id";
     private static final String DIALOG_DATE = "DialogDate";
-    private static final String DIALOG_TIME = "DialogDate";
+    private static final String DIALOG_TIME = "DialogTime";
 
     private static final int REQUEST_DATE = 0;
     private static final int REQUEST_TIME = 1;
@@ -49,6 +50,7 @@ public class CrimeFragment extends Fragment {
     private CheckBox mSolvedCheckBox;
     private Button mReportButton;
     private Button mSuspectButton;
+    private Button mCallSuspectButton;
 
     public static CrimeFragment newInstance(UUID crimeId) {
         Bundle args = new Bundle();
@@ -161,12 +163,43 @@ public class CrimeFragment extends Fragment {
             }
         });
 
-        if(mCrime.getSuspect() != null) {
-            mSuspectButton.setText(mCrime.getSuspect());
-        }
         PackageManager packageManager = getActivity().getPackageManager();
         if(packageManager.resolveActivity(pickContact, PackageManager.MATCH_DEFAULT_ONLY) == null) {
             mSuspectButton.setEnabled(false);
+        }
+
+        mCallSuspectButton = (Button) v.findViewById(R.id.call_suspect);
+                mCallSuspectButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Uri contectUri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
+                        String selectClause = ContactsContract.CommonDataKinds.Phone._ID + " = ?";
+
+                        String[] fields = {ContactsContract.CommonDataKinds.Phone.NUMBER};
+                        String[] selectParams = {Long.toString(mCrime.getContactId())};
+
+                        Cursor cursor = getActivity().getContentResolver().query(contectUri, fields, selectClause, selectParams, null);
+
+                        if(cursor != null && cursor.getCount() > 0) {
+
+                            try {
+                                cursor.moveToFirst();
+                                String number = cursor.getString(0);
+                                Uri phoneNumber  = Uri.parse("tel:" + number);
+                                Intent intent = new Intent(Intent.ACTION_DIAL, phoneNumber);
+                                mCallSuspectButton.setText(String.valueOf(phoneNumber));
+                                startActivity(intent);
+                            }finally {
+                                cursor.close();
+                            }
+                        }
+                    }
+                });
+
+        if(mCrime.getSuspect() != null) {
+            mSuspectButton.setText(mCrime.getSuspect());
+        }else {
+            mCallSuspectButton.setEnabled(false);
         }
         return v;
     }
@@ -176,12 +209,10 @@ public class CrimeFragment extends Fragment {
         if (resultCode != Activity.RESULT_OK)
             return;
 
-        Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
-        mCrime.setDate(date);
-
         if(requestCode == REQUEST_DATE) {
+            Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+            mCrime.setDate(date);
             updateDate();
-        } else if(requestCode == REQUEST_TIME) {
             updateTime();
         } else if(requestCode == REQUEST_CONTACT && data != null) {
 
@@ -189,7 +220,8 @@ public class CrimeFragment extends Fragment {
 
             //specify which fields you want your query to return values for
             String[] queryFields = new String[] {
-                    ContactsContract.Contacts.DISPLAY_NAME
+                    ContactsContract.Contacts.DISPLAY_NAME,
+                    ContactsContract.Contacts._ID
             };
             //Perform your query - the contactUri is like a "where" clause here
             Cursor c = null;
@@ -200,32 +232,32 @@ public class CrimeFragment extends Fragment {
                 if(c.getCount() == 0) {
                     return;
                 }
-                //Pull out the first column of the first wor of data that is your sespect's name.
+                //Pull out the first column of the first row of data that is your suspect's name.
                 c.moveToFirst();
                 String suspect = c.getString(0);
+                long contactId = c.getLong(1);
+
                 mCrime.setSuspect(suspect);
+                mCrime.setContactId(contactId);
                 mSuspectButton.setText(suspect);
+
             }finally {
                 c.close();
             }
         }
     }
     private void updateDate() {
-        mDateButton.setText(DateFormat.format("EEEE, MMMM d, yyyyy", mCrime.getDate()));
+        mDateButton.setText(mCrime.getFormattedDate());
     }
     private void updateTime() {
-        mTimeButton.setText(DateFormat.format("h:mm a", mCrime.getDate()));
+        mTimeButton.setText(mCrime.getFormattedTime());
     }
 
     private String getCrimeReport() {
-        String solvedString = null;
-        if(mCrime.isSolved()) {
-            solvedString = getString(R.string.crime_report_solved);
-        } else {
-            solvedString = getString(R.string.crime_report_unsolved);
-        }
+        String solvedString = mCrime.isSolved() ? getString(R.string.crime_report_solved) : getString(R.string.crime_report_unsolved);
+
         String dateFormat = "EEE, MMM dd";
-        String dateString = DateFormat.format(dateFormat, mCrime.getDate()).toString();
+        String dateString = new SimpleDateFormat(dateFormat, Locale.US).format(mCrime.getDate());
 
         String suspect = mCrime.getSuspect();
         if(suspect == null) {
@@ -247,13 +279,14 @@ public class CrimeFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_item_delete_crime:
-                CrimeLab.get(getActivity()).deleteCrime(mCrime);
-                Toast.makeText(getActivity(), mCrime.getTitle() + " deleted Successfully", Toast.LENGTH_SHORT).show();
-                getActivity().finish();
+                if(mCrime != null) {
+                    CrimeLab.get(getActivity()).deleteCrime(mCrime);
+                    Toast.makeText(getActivity(), mCrime.getTitle() + " deleted Successfully", Toast.LENGTH_SHORT).show();
+                    getActivity().finish();
+                }
                 return true;
             default:
-                super.onOptionsItemSelected(item);
-                return true;
+                return super.onOptionsItemSelected(item);
         }
     }
 }

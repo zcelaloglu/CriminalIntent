@@ -37,7 +37,8 @@ public abstract class PickerDialogFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Date date = (Date) getArguments().getSerializable(ARG_DATE);
         mCalendar = Calendar.getInstance();
-        mCalendar.setTime(date);
+        if(date != null)
+            mCalendar.setTime(date);
 
         View v = initLayout();
 
@@ -56,9 +57,9 @@ public abstract class PickerDialogFragment extends DialogFragment {
 
     private void sendResult(int resultCode, Date date) {
 
-            if(getTargetFragment() == null) {
-                return;
-            }
+        if(getTargetFragment() == null) {
+            return;
+        }
         Intent intent = new Intent();
         intent.putExtra(EXTRA_DATE, date);
 
