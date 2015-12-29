@@ -73,6 +73,10 @@ public class Crime {
         mTitle = title;
     }
 
+    public String getPhotoFileName() {
+        return "IMG_" + getId().toString() + ".jpg";
+    }
+
     public String getFormattedDate() {
         String format = "EEEE, MMM d, yyyy";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(format, Locale.US);
