@@ -1,5 +1,6 @@
 package com.bignerdranch.android.criminalintent;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -16,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -34,10 +36,17 @@ public class CrimeListFragment extends Fragment {
     private LinearLayout mLinearLayout;
     private Button mAddButton;
     private boolean mSubtitleVisible;
+    private Callbacks mCallbacks;
 
+    private int mAdapterClickPosition;
 
-    private int mAdapterClickPosition = -1;
-
+    /**
+     * Required interface for hosting activities
+     * */
+    public interface Callbacks {
+        void onCrimeSelected(Crime crime);
+        void onCheckBoxSelected(Crime crime);
+    }
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -49,11 +58,11 @@ public class CrimeListFragment extends Fragment {
         mLinearLayout = (LinearLayout) view.findViewById(R.id.empty_crime_list);
         mAddButton = (Button) view.findViewById(R.id.add_crime_button);
 
-        updateUI();
         if (savedInstanceState != null) {
             mAdapterClickPosition = savedInstanceState.getInt(ADAPTER_POSITION,0);
             mSubtitleVisible = savedInstanceState.getBoolean(SUBTITLE_VISIBILITY);
         }
+        updateUI();
         return view;
 
     }
@@ -66,6 +75,18 @@ public class CrimeListFragment extends Fragment {
     }
 
     @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mCallbacks = (Callbacks)activity;
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallbacks = null;
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         Log.d("onSaveInstanceState","onSaveInstance cagirildi");
         super.onSaveInstanceState(outState);
@@ -73,7 +94,7 @@ public class CrimeListFragment extends Fragment {
         outState.putBoolean(SUBTITLE_VISIBILITY,mSubtitleVisible);
     }
 
-    private void updateUI() {
+    public void updateUI() {
         CrimeLab crimeLab = CrimeLab.get(getActivity());
         List<Crime> crimes = crimeLab.getCrimes();
         if(mCrimeAdapter == null) {
@@ -149,7 +170,7 @@ public class CrimeListFragment extends Fragment {
         private TextView mDateTextView;
         private CheckBox mCrimeCheckBox;
 
-        private Crime mCrime;
+        public Crime mCrime;
 
         public void bindCrime(Crime crime) {
             mCrime = crime;
@@ -164,14 +185,26 @@ public class CrimeListFragment extends Fragment {
             mTitleTextView = (TextView) itemView.findViewById(R.id.list_item_crime_title_view);
             mDateTextView = (TextView)itemView.findViewById(R.id.list_item_crime_date_text_view);
             mCrimeCheckBox = (CheckBox)itemView.findViewById(R.id.list_item_crime_solved_check_box);
+
+            mCrimeCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    mCrime.setSolved(isChecked);
+                    CrimeLab.get(getActivity()).updateCrime(mCrime);
+                    //mCallbacks.onCheckBoxSelected(mCrime);
+
+                }
+            });
         }
 
         @Override
         public void onClick(View v) {
             mAdapterClickPosition = getAdapterPosition();
-            Intent intent = CrimePagerActivity.newIntent(getContext(),mCrime.getId());
-            startActivity(intent);
+            mCallbacks.onCrimeSelected(mCrime);
         }
+
+
     }
 
     @Override
@@ -192,7 +225,10 @@ public class CrimeListFragment extends Fragment {
 
         switch (item.getItemId()) {
             case R.id.menu_item_new_crime:
-                addCrime();
+                Crime crime = new Crime();
+                CrimeLab.get(getActivity()).addCrime(crime);
+                updateUI();
+                mCallbacks.onCrimeSelected(crime);
                 return true;
             case R.id.menu_item_show_subtitle:
                 mSubtitleVisible = !mSubtitleVisible;
